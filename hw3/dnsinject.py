@@ -40,6 +40,6 @@ if __name__ == "__main__":
 
     
     # sniff(filter="dns", iface=d["interface"], prn=dnsinject, store=False, count=5) # remove count later
-    sniff(iface=d["interface"], prn=dnsinject, store=False, count=5)
+    sniff(filter="udp.port=53", iface=d["interface"], prn=dnsinject, store=False, count=5)
 
     # print(d)
