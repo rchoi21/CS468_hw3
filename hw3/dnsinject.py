@@ -51,7 +51,7 @@ if __name__ == "__main__":
     # whether hostfile specified or not
     if d["hostfile"] == None:
         redir_ip = get_ip(str(d["interface"]))
-        # print(redir) # FOR TESTING
+        print(redir_ip) # FOR TESTING
     else:
         redir_ip = ""
         file = open(d["hostfile"], "r")
