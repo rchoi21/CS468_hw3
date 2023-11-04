@@ -1,0 +1,12 @@
+Resources: many from explanation1
+https://stackoverflow.com/questions/12501780/dnsrr-iteration
+
+explanation:
+    Approach: I setup the arguments using argparse similar to dnsinject. If a -r flag and a file was given, then we would sniff() with the 
+    offline option. Otherwise, we would set up the interface and use sniff() to find dns packets. A file is also opened up called log.txt
+    so that we can log any suspicious packets we see later. Then we check if our dict (captured_dict) contains the dns_id of the packet. 
+    If it exists within the dict, its dns_rdata will be checked against the already existing packet in the captured_dict. If the
+    packet is deemed suspicious, it will grab all the ip addresses of the current packet and the ip addresses of the packet on record witht
+    the same dns_id. Then it will write to the log.txt file opened earlier.
+
+    testing: I didn't have a chance to really test and find if my code was working as intended

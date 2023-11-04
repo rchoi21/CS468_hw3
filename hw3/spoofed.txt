@@ -1,0 +1,4 @@
+Task A:
+    I never really understood how to capture my spoofed packets and I could never tell if I properly get the spoofed packets.
+    However, within my code, I think the only thing I really change is the dnsrr.rdata to either my local address or one given
+    by a hostnames file. I think, in theory, a all other fields and headers should be the same.

@@ -1,0 +1,34 @@
+resources:
+https://docs.python.org/3/library/argparse.html
+https://stackoverflow.com/questions/14950964/overriding-default-argparse-h-behaviour
+https://scapy.readthedocs.io/en/latest/routing.html
+https://scapy.readthedocs.io/en/latest/api/scapy.interfaces.html#scapy.interfaces.NetworkInterfaceDict.dev_from_networkname
+https://stackoverflow.com/questions/28292224/scapy-packet-sniffer-triggering-an-action-up-on-each-sniffed-packet
+https://0xbharath.github.io/python-network-programming/libraries/netifaces/index.html
+https://www.programcreek.com/python/example/81895/netifaces.interfaces
+https://stackoverflow.com/questions/22093971/how-to-verify-if-a-packet-in-scapy-has-a-tcp-layer
+https://0xbharath.github.io/art-of-packet-crafting-with-scapy/scapy/sniffing/index.html#:~:text=Scapy's%20in%2Dbuilt%20sniff(),(Same%20as%20TCPDUMP).
+https://scapy.readthedocs.io/en/latest/api/scapy.layers.dns.html
+https://gupta-bless.medium.com/exploring-more-scapy-e9e5ab7f8fb9#:~:text=DNSQR%20%3D%20DNS%20Question%20Record,OUTPUT4
+https://jasonmurray.org/posts/2020/scapydns/
+
+Explanation:
+    Approach:
+        First I implemented the command flags so that the I am able to choose an interface or have a file that gave me hostnames. I want the spoofed
+        packets to be redirected to the redirected ip address which would either be a local ip or the ip that the hostnames file gives. I also need to
+        make sure that the packets I get are dns packets, hence the "udp dst port 53 and udp[10] & 0x80 = 0" filter. Moreover, we make sure that the dns
+        packet is a dns QUERY packet via "pkt.haslayer(DNSQR) and pkt[DNS].qr." If the -h flag and hostnames file was given, then I'd find the hostname
+        of the packet via "pkt[DNSQR].qname" to check against the dict I made of all the hostnames and ip pairs that were given from the hostnames file.
+        If the hostname is not in the hostnames file, I will ignore that packet. If -h flag was not used, then I use the local ip from the given or default
+        interface. I then construct a udp packet depending on what the packet originally used. I construct the spoofed dns packet where IP src equals
+        the captured packet's dst and vice versa for the dst. Similarly, the udp or tcp src port will be the dst port of the captured packet and vice versa for
+        dst port. Then, I have the rdata within dnsrr be set to the ip address that I chose to redirect to and finally send the constructed spoofed packet.
+    Testing:
+        Ran sudo $(which python) dnsinject.py (dnsinject.py without any flags) and used dig to dig google.com, youtube.com, and foo.example.com.
+        I did notice that occasionally a packet would be sent to the host "mobile.events.data.microsoft.com" and based on these links: 
+        (https://www.reddit.com/r/pihole/comments/12xbo7x/what_is_eumobileeventsdatamicrosoftcom/ hyperlinks to 
+        https://learn.microsoft.com/en-us/windows/privacy/manage-windows-21h2-endpoints), I think it just has to do with me using windows...
+        I used sniff() in scapy to capture packets and put them into a pcap file for further analysis.
+        
+
+

